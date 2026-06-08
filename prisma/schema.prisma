@@ -1,0 +1,98 @@
+// iPet / Smart Pet Pass — Schema Prisma (MVP Acadêmico)
+// ADR 002: SQLite via Prisma. Provider sqlite; nunca postgresql/mysql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Bounded Context: Cadastro de Pets (Supporting)
+model Responsavel {
+  id         String      @id @default(uuid())
+  nome       String
+  email      String      @unique
+  telefone   String
+  pets       Pet[]
+  pagamentos Pagamento[]
+}
+
+// Bounded Context: Cadastro de Pets (Supporting) — Aggregate Root Pet
+model Pet {
+  id              String              @id @default(uuid())
+  nome            String
+  data_nascimento DateTime
+  tipo_especie    String // "Cao" | "Gato"
+  microchip       String              @unique
+  responsavel_id  String
+  responsavel     Responsavel         @relation(fields: [responsavel_id], references: [id])
+  registros       RegistroSanitario[]
+  petpasses       PetPass[]
+}
+
+// Bounded Context: PET Pass (Core) — Aggregate Root PetPass
+model PetPass {
+  id                String      @id @default(uuid())
+  pet_id            String
+  pet               Pet         @relation(fields: [pet_id], references: [id])
+  status_compliance String // "Apto" | "Inapto"
+  motivo            String?
+  data_liberacao    DateTime?
+  destino_codigo    String
+  data_emissao      DateTime    @default(now())
+  data_expiracao    DateTime
+  hash_polygon      String?
+  pagamentos        Pagamento[]
+}
+
+// Bounded Context: Gestão de Saúde (Core)
+model RegistroSanitario {
+  id               String      @id @default(uuid())
+  pet_id           String
+  pet              Pet         @relation(fields: [pet_id], references: [id])
+  veterinario_id   String
+  veterinario      Veterinario @relation(fields: [veterinario_id], references: [id])
+  tipo             String // "Vacina" | "Vermifugo" | "Antipulga" | "Sorologia"
+  data_aplicacao   DateTime
+  sorologia_result String?
+  hash_polygon     String?
+}
+
+// Bounded Context: Veterinários (Supporting) — Aggregate Root Veterinario
+model Veterinario {
+  id         String              @id @default(uuid())
+  crmv       String              @unique
+  nome       String
+  habilitado Boolean
+  registros  RegistroSanitario[]
+}
+
+// Bounded Context: Cias. Aéreas (Supporting) — Aggregate Root CiaAerea
+model CiaAerea {
+  id          String @id @default(uuid())
+  codigo_iata String @unique
+  nome        String
+}
+
+// Bounded Context: Cias. Aéreas (Supporting) — RegraDestino (BR/UE/JP)
+model RegraDestino {
+  destino_codigo          String  @id
+  periodo_carencia_dias   Int
+  sorologia_obrigatoria   Boolean
+  carencia_sorologia_dias Int?
+}
+
+// Bounded Context: Pagamentos (Generic) — Aggregate Root Pagamento
+model Pagamento {
+  id             String   @id @default(uuid())
+  responsavel_id String
+  responsavel    Responsavel @relation(fields: [responsavel_id], references: [id])
+  valor          Float
+  metodo         String
+  status         String
+  petpass_id     String?
+  petpass        PetPass? @relation(fields: [petpass_id], references: [id])
+}
