@@ -30,6 +30,13 @@ interface Dose {
   dias_restantes: number;
 }
 
+interface Alerta {
+  tipo: string;
+  proxima_dose: string;
+  dias_restantes: number;
+  janela: "D-1" | "D-3" | "D-7";
+}
+
 // Veterinários do seed (MVP sem auth — ADR 003).
 const VETERINARIOS = [
   { id: "vet-001", nome: "Dra. Ana Lima" },
@@ -43,6 +50,7 @@ export default function PetDetalhePage(): React.ReactElement {
 
   const [pet, setPet] = useState<PetDetalhe | null>(null);
   const [doses, setDoses] = useState<Dose[]>([]);
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [carregando, setCarregando] = useState<boolean>(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -62,9 +70,10 @@ export default function PetDetalhePage(): React.ReactElement {
     setCarregando(true);
     setErro(null);
     try {
-      const [respPet, respCronograma] = await Promise.all([
+      const [respPet, respCronograma, respAlertas] = await Promise.all([
         fetch(`/api/pets/${petId}`),
         fetch(`/api/pets/${petId}/cronograma`),
+        fetch(`/api/pets/${petId}/alertas`),
       ]);
       const dataPet = await respPet.json();
       if (!respPet.ok) {
@@ -74,6 +83,8 @@ export default function PetDetalhePage(): React.ReactElement {
       setPet(dataPet);
       const dataCron = await respCronograma.json();
       if (respCronograma.ok) setDoses(dataCron.doses ?? []);
+      const dataAlertas = await respAlertas.json();
+      if (respAlertas.ok) setAlertas(dataAlertas.alertas ?? []);
     } catch {
       setErro("Falha de rede ao carregar pet");
     } finally {
@@ -246,6 +257,41 @@ export default function PetDetalhePage(): React.ReactElement {
                 </span>
               </li>
             ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-4 font-semibold text-slate-800">Alertas Proativos</h2>
+        {alertas.length === 0 ? (
+          <p className="text-sm text-slate-500">Nenhum alerta para os próximos 7 dias.</p>
+        ) : (
+          <ul className="space-y-2">
+            {alertas.map((a) => {
+              const bordaClass =
+                a.janela === "D-1"
+                  ? "border-red-500"
+                  : a.janela === "D-3"
+                    ? "border-yellow-500"
+                    : "border-blue-500";
+              const textoClass =
+                a.janela === "D-1"
+                  ? "text-red-700"
+                  : a.janela === "D-3"
+                    ? "text-yellow-700"
+                    : "text-blue-700";
+              return (
+                <li key={a.tipo} className={`rounded border-l-4 bg-slate-50 px-4 py-2 text-sm ${bordaClass}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{a.tipo}</span>
+                    <span className={`text-xs font-semibold ${textoClass}`}>
+                      {a.janela} — {a.dias_restantes} dia{a.dias_restantes !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-slate-500">Próxima dose: {formatarData(a.proxima_dose)}</p>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

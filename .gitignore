@@ -20,3 +20,6 @@ prisma/dev.db-journal
 
 # debug
 npm-debug.log*
+
+# test coverage
+coverage/
