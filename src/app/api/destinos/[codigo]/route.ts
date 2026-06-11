@@ -15,6 +15,7 @@ export async function GET(_req: NextRequest, ctx: Contexto): Promise<NextRespons
     }
     return NextResponse.json(regra, { status: 200 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] GET /api/destinos/[codigo]:", erro);
     return NextResponse.json({ error: "Erro ao buscar destino" }, { status: 500 });
   }
 }

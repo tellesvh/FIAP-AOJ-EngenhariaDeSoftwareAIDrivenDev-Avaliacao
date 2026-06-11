@@ -48,6 +48,7 @@ export async function GET(_req: NextRequest, ctx: Contexto): Promise<NextRespons
 
     return NextResponse.json({ pet_id: id, doses }, { status: 200 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] GET /api/pets/[id]/cronograma:", erro);
     return NextResponse.json({ error: "Erro ao calcular cronograma" }, { status: 500 });
   }
 }

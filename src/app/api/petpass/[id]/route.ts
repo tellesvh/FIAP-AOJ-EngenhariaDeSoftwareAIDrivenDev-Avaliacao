@@ -18,6 +18,7 @@ export async function GET(_req: NextRequest, ctx: Contexto): Promise<NextRespons
     }
     return NextResponse.json(petpass, { status: 200 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] GET /api/petpass/[id]:", erro);
     return NextResponse.json({ error: "Erro ao buscar Pet Pass" }, { status: 500 });
   }
 }

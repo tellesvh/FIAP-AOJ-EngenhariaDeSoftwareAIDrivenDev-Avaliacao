@@ -40,6 +40,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(pagamento, { status: 201 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] POST /api/pagamentos:", erro);
     return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 500 });
   }
 }

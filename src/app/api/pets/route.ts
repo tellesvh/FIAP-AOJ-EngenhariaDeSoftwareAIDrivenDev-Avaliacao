@@ -21,6 +21,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
     return NextResponse.json(pets, { status: 200 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] GET /api/pets:", erro);
     return NextResponse.json({ error: "Erro ao listar pets" }, { status: 500 });
   }
 }
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     return NextResponse.json(pet, { status: 201 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] POST /api/pets:", erro);
     return NextResponse.json({ error: "Erro ao criar pet" }, { status: 500 });
   }
 }

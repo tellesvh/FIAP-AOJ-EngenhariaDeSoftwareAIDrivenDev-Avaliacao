@@ -30,6 +30,7 @@ export async function GET(_req: NextRequest, ctx: Contexto): Promise<NextRespons
     });
     return NextResponse.json(registros, { status: 200 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] GET /api/pets/[id]/registros-sanitarios:", erro);
     return NextResponse.json({ error: "Erro ao listar registros sanitários" }, { status: 500 });
   }
 }
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest, ctx: Contexto): Promise<NextRespons
 
     return NextResponse.json(registro, { status: 201 });
   } catch (erro) {
+    console.error("[ROUTE_ERROR] POST /api/pets/[id]/registros-sanitarios:", erro);
     return NextResponse.json({ error: "Erro ao criar registro sanitário" }, { status: 500 });
   }
 }
