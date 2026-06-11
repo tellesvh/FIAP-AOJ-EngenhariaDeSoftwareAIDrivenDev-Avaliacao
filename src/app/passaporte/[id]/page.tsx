@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { formatarData } from "@/lib/formatadores";
 
 interface PetPass {
   id: string;
@@ -13,11 +14,6 @@ interface PetPass {
   data_expiracao: string;
   hash_polygon: string | null;
   pet: { nome: string; microchip: string };
-}
-
-function formatarData(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR");
 }
 
 export default function PassaportePage(): React.ReactElement {

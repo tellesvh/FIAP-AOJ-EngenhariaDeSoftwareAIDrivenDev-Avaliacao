@@ -1,10 +1,15 @@
 // iPet / Smart Pet Pass — Seed determinístico (IDs fixos)
 // Datas dos RegistroSanitario são relativas a "hoje" para exercitar I1/I2/I3.
 
-import { PrismaClient } from "@prisma/client";
 import { addDays, subDays } from "date-fns";
+import { prisma } from "../src/lib/prisma";
+import {
+  PERIODO_CARENCIA_BRASIL_DIAS,
+  CARENCIA_SOROLOGIA_UE_DIAS,
+  CARENCIA_SOROLOGIA_JP_DIAS,
+  VALIDADE_PETPASS_DIAS,
+} from "../src/types/domain";
 
-const prisma = new PrismaClient();
 const hoje = new Date();
 
 async function main(): Promise<void> {
@@ -18,15 +23,15 @@ async function main(): Promise<void> {
   await prisma.responsavel.deleteMany();
   await prisma.regraDestino.deleteMany();
 
-  // RegraDestino — BR (21d, sem sorologia), UE (21d + sorologia 90d), JP (21d + sorologia 180d)
+  // RegraDestino — alinhadas às invariantes I1/I2/I3
   await prisma.regraDestino.create({
-    data: { destino_codigo: "BR", periodo_carencia_dias: 21, sorologia_obrigatoria: false, carencia_sorologia_dias: null },
+    data: { destino_codigo: "BR", periodo_carencia_dias: PERIODO_CARENCIA_BRASIL_DIAS, sorologia_obrigatoria: false, carencia_sorologia_dias: null },
   });
   await prisma.regraDestino.create({
-    data: { destino_codigo: "UE", periodo_carencia_dias: 21, sorologia_obrigatoria: true, carencia_sorologia_dias: 90 },
+    data: { destino_codigo: "UE", periodo_carencia_dias: PERIODO_CARENCIA_BRASIL_DIAS, sorologia_obrigatoria: true, carencia_sorologia_dias: CARENCIA_SOROLOGIA_UE_DIAS },
   });
   await prisma.regraDestino.create({
-    data: { destino_codigo: "JP", periodo_carencia_dias: 21, sorologia_obrigatoria: true, carencia_sorologia_dias: 180 },
+    data: { destino_codigo: "JP", periodo_carencia_dias: PERIODO_CARENCIA_BRASIL_DIAS, sorologia_obrigatoria: true, carencia_sorologia_dias: CARENCIA_SOROLOGIA_JP_DIAS },
   });
 
   // Responsaveis
@@ -60,30 +65,30 @@ async function main(): Promise<void> {
     data: { id: "pet-003", nome: "Thor", data_nascimento: subDays(hoje, 540), tipo_especie: "Cao", microchip: "BR003", responsavel_id: "resp-002" },
   });
 
-  // RegistroSanitario (datas relativas a hoje)
-  // reg-001 Rex · Vacina · há 30 dias → cumpre I1
+  // RegistroSanitario (datas relativas a hoje para exercitar I1/I2/I3)
+  // reg-001 Rex · Vacina · (PERIODO_CARENCIA_BRASIL_DIAS + 9)d atrás → cumpre I1 (≥ 21d)
   await prisma.registroSanitario.create({
-    data: { id: "reg-001", pet_id: "pet-001", veterinario_id: "vet-001", tipo: "Vacina", data_aplicacao: subDays(hoje, 30) },
+    data: { id: "reg-001", pet_id: "pet-001", veterinario_id: "vet-001", tipo: "Vacina", data_aplicacao: subDays(hoje, PERIODO_CARENCIA_BRASIL_DIAS + 9) },
   });
-  // reg-002 Rex · Sorologia · há 200 dias → cumpre I3 (180 dias)
+  // reg-002 Rex · Sorologia · (CARENCIA_SOROLOGIA_JP_DIAS + 20)d atrás → cumpre I3 (≥ 180d)
   await prisma.registroSanitario.create({
-    data: { id: "reg-002", pet_id: "pet-001", veterinario_id: "vet-001", tipo: "Sorologia", data_aplicacao: subDays(hoje, 200), sorologia_result: "Reagente >= 0.5 UI/mL" },
+    data: { id: "reg-002", pet_id: "pet-001", veterinario_id: "vet-001", tipo: "Sorologia", data_aplicacao: subDays(hoje, CARENCIA_SOROLOGIA_JP_DIAS + 20), sorologia_result: "Reagente >= 0.5 UI/mL" },
   });
-  // reg-003 Luna · Vacina · há 10 dias → não cumpre I1, deve reprovar
+  // reg-003 Luna · Vacina · (PERIODO_CARENCIA_BRASIL_DIAS - 11)d atrás → não cumpre I1 (< 21d), deve reprovar
   await prisma.registroSanitario.create({
-    data: { id: "reg-003", pet_id: "pet-002", veterinario_id: "vet-001", tipo: "Vacina", data_aplicacao: subDays(hoje, 10) },
+    data: { id: "reg-003", pet_id: "pet-002", veterinario_id: "vet-001", tipo: "Vacina", data_aplicacao: subDays(hoje, PERIODO_CARENCIA_BRASIL_DIAS - 11) },
   });
-  // reg-004 Thor · Vacina · há 25 dias → cumpre I1
+  // reg-004 Thor · Vacina · (PERIODO_CARENCIA_BRASIL_DIAS + 4)d atrás → cumpre I1 (≥ 21d)
   await prisma.registroSanitario.create({
-    data: { id: "reg-004", pet_id: "pet-003", veterinario_id: "vet-002", tipo: "Vacina", data_aplicacao: subDays(hoje, 25) },
+    data: { id: "reg-004", pet_id: "pet-003", veterinario_id: "vet-002", tipo: "Vacina", data_aplicacao: subDays(hoje, PERIODO_CARENCIA_BRASIL_DIAS + 4) },
   });
-  // reg-005 Thor · Sorologia · há 95 dias → cumpre I2 (90), não cumpre I3 (180)
+  // reg-005 Thor · Sorologia · (CARENCIA_SOROLOGIA_UE_DIAS + 5)d atrás → cumpre I2 (≥ 90d), não cumpre I3 (< 180d)
   await prisma.registroSanitario.create({
-    data: { id: "reg-005", pet_id: "pet-003", veterinario_id: "vet-002", tipo: "Sorologia", data_aplicacao: subDays(hoje, 95), sorologia_result: "Reagente >= 0.5 UI/mL" },
+    data: { id: "reg-005", pet_id: "pet-003", veterinario_id: "vet-002", tipo: "Sorologia", data_aplicacao: subDays(hoje, CARENCIA_SOROLOGIA_UE_DIAS + 5), sorologia_result: "Reagente >= 0.5 UI/mL" },
   });
 
   // PetPass pré-emitidos
-  // pass-001 Rex → JP · Apto · hash fixo · expira em 90 dias
+  // pass-001 Rex → JP · Apto · hash fixo · expira em VALIDADE_PETPASS_DIAS dias
   await prisma.petPass.create({
     data: {
       id: "pass-001",
@@ -93,18 +98,18 @@ async function main(): Promise<void> {
       data_liberacao: null,
       destino_codigo: "JP",
       data_emissao: hoje,
-      data_expiracao: addDays(hoje, 90),
+      data_expiracao: addDays(hoje, VALIDADE_PETPASS_DIAS),
       hash_polygon: "hash-polygon-rex-001",
     },
   });
-  // pass-002 Luna → BR · Inapto · motivo de carência de vacina
+  // pass-002 Luna → BR · Inapto · data_expiracao = hoje (intencional: pass Inapto expira imediatamente)
   await prisma.petPass.create({
     data: {
       id: "pass-002",
       pet_id: "pet-002",
       status_compliance: "Inapto",
       motivo: "Carência de vacina não cumprida",
-      data_liberacao: addDays(subDays(hoje, 10), 21),
+      data_liberacao: addDays(subDays(hoje, PERIODO_CARENCIA_BRASIL_DIAS - 11), PERIODO_CARENCIA_BRASIL_DIAS),
       destino_codigo: "BR",
       data_emissao: hoje,
       data_expiracao: hoje,

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { formatarData } from "@/lib/formatadores";
+import { JANELA_ALERTA_DIAS } from "@/types/domain";
 
 interface Registro {
   id: string;
@@ -16,6 +18,7 @@ interface PetDetalhe {
   tipo_especie: string;
   microchip: string;
   data_nascimento: string;
+  responsavel_id: string;
   responsavel: { nome: string; email: string; telefone: string };
   registros: Registro[];
   petpass: { id: string; status_compliance: string; destino_codigo: string } | null;
@@ -32,10 +35,6 @@ const VETERINARIOS = [
   { id: "vet-001", nome: "Dra. Ana Lima" },
   { id: "vet-002", nome: "Dr. Pedro Costa" },
 ];
-
-function formatarData(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR");
-}
 
 export default function PetDetalhePage(): React.ReactElement {
   const params = useParams<{ id: string }>();
@@ -119,11 +118,11 @@ export default function PetDetalhePage(): React.ReactElement {
     setEmitindo(true);
     setErroEmissao(null);
     try {
-      // 1) Pagamento (mock Mercado Pago)
+      // 1) Pagamento (mock Mercado Pago) — usa o responsavel_id real do pet (RB-CP-02)
       const respPag = await fetch("/api/pagamentos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ responsavel_id: "resp-001" }),
+        body: JSON.stringify({ responsavel_id: pet.responsavel_id }),
       });
       const pagamento = await respPag.json();
       if (!respPag.ok) {
@@ -242,7 +241,7 @@ export default function PetDetalhePage(): React.ReactElement {
             {doses.map((d) => (
               <li key={d.tipo} className="flex items-center justify-between">
                 <span>{d.tipo}</span>
-                <span className={d.dias_restantes <= 7 ? "font-medium text-red-600" : "text-slate-600"}>
+                <span className={d.dias_restantes <= JANELA_ALERTA_DIAS ? "font-medium text-red-600" : "text-slate-600"}>
                   {formatarData(d.proxima_dose)} ({d.dias_restantes} dias)
                 </span>
               </li>

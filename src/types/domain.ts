@@ -12,6 +12,11 @@ export const VALOR_EMISSAO_PETPASS = 149.9;
 // Validade do PetPass emitido, em dias.
 export const VALIDADE_PETPASS_DIAS = 90;
 
+// Períodos de carência por invariante (I1 — Brasil, I2 — UE, I3 — Japão).
+export const PERIODO_CARENCIA_BRASIL_DIAS = 21;
+export const CARENCIA_SOROLOGIA_UE_DIAS = 90;
+export const CARENCIA_SOROLOGIA_JP_DIAS = 180;
+
 // Janela de alertas proativos (US001 — D-7/D-3/D-1).
 export const JANELA_ALERTA_DIAS = 7;
 

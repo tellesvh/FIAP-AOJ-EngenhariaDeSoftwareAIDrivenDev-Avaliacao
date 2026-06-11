@@ -2,18 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+const querySchema = z.object({
+  responsavel_id: z.string().optional(),
+});
+
 const criarPetSchema = z.object({
   nome: z.string().min(1),
-  data_nascimento: z.coerce.date(),
+  data_nascimento: z.coerce.date().refine(
+    (d) => d <= new Date(),
+    { message: "Data de nascimento não pode ser futura" },
+  ),
   tipo_especie: z.enum(["Cao", "Gato"]),
   microchip: z.string().min(1),
   responsavel_id: z.string().min(1),
 });
 
-// GET /api/pets — lista pets; filtro opcional ?responsavel_id=
+// GET /api/pets — lista pets; filtro opcional ?responsavel_id= (validado via Zod)
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
-    const responsavelId = req.nextUrl.searchParams.get("responsavel_id");
+    const queryResult = querySchema.safeParse(Object.fromEntries(req.nextUrl.searchParams));
+    if (!queryResult.success) {
+      return NextResponse.json({ error: "Parâmetros inválidos", details: queryResult.error.errors }, { status: 400 });
+    }
+    const { responsavel_id: responsavelId } = queryResult.data;
     const pets = await prisma.pet.findMany({
       where: responsavelId ? { responsavel_id: responsavelId } : undefined,
       include: { responsavel: true },
